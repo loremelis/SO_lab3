@@ -6,17 +6,13 @@
 #include "plane.h"
 
 #define NUM_TRACKS 1
-
 #define ATERRIZAJE 0
 #define DESPEGUE 1
-#define MAX_BUFFER 1024
 
 pthread_mutex_t mut_id;
 pthread_cond_t no_lleno;
 pthread_cond_t no_vacio;
 
-int n_elementos;
-struct plane * buffer[MAX_BUFFER];
 int disp_id = 0;
 int n,m;
 
@@ -79,10 +75,9 @@ int main(int argc, char ** argv) {
 }
 
 
-
+t
 void jefe_pista(int n){
-    
-    int pos = 0;
+
     plane * planes[n];
     
     for (int i=0; i<n; i++){
@@ -92,15 +87,15 @@ void jefe_pista(int n){
         planes[i]->action = DESPEGUE;
         planes[i]->last_flight = 0;
         
-        pthread_mutex_lock(&mut_id);
-        while (n_elementos == MAX_BUFFER)
-            pthread_cond_wait(&no_lleno, &mut_id);
+        //pthread_mutex_lock(&mut_id);
+        //while (n_elementos == MAX_BUFFER)
+        //    pthread_cond_wait(&no_lleno, &mut_id);
         //buffer[pos] = plane[i];
         queue_put(planes[i]);
         //pos = (pos + 1) % MAX_BUFFER;
         //n_elementos ++;
-        pthread_cond_signal(&no_vacio);
-        pthread_mutex_unlock(&mut_id);
+        //pthread_cond_signal(&no_vacio);
+        //pthread_mutex_unlock(&mut_id);
     }
     pthread_exit(0);
 }
@@ -108,8 +103,7 @@ void jefe_pista(int n){
 
 
 void radar(int m){
-    
-    int pos = 0;
+
     plane * planes[m];
     
     for (int i=0; i<m; i++){
@@ -119,14 +113,7 @@ void radar(int m){
         planes[i]->action = ATERRIZAJE;
         planes[i]->last_flight = 0;
         
-        pthread_mutex_lock(&mut_id);
-        while (n_elementos == MAX_BUFFER)
-            pthread_cond_wait(&no_lleno, &mut_id);
         queue_put(planes[i]);
-        //pos = (pos + 1) % MAX_BUFFER;
-        //n_elementos ++;
-        pthread_cond_signal(&no_vacio);
-        pthread_mutex_unlock(&mut_id);
     }
     pthread_exit(0);
 }
