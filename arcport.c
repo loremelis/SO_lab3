@@ -1,27 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include "queue.h"
-#include <pthread.h>
-#include <unistd.h>
-#include "plane.h"
+#include "queue.c"
+#include "decl.h"
 
 #define NUM_TRACKS 1
 #define ATERRIZAJE 0
 #define DESPEGUE 1
 
-pthread_mutex_t mut_id;
-pthread_cond_t no_lleno;
-pthread_cond_t no_vacio;
-
-int disp_id = 0;
-int n,m;
-
-void jefe_pista();
-void radar();
-void torre_de_control();
-void print_banner();
-
-typedef struct plane plane;
 
 void print_banner()
 {
@@ -52,51 +35,55 @@ int main(int argc, char ** argv) {
     
     pthread_t th1, th2, th3;
     
-    pthread_mutex_init(&mut_id, NULL);
+	pthread_mutex_init(&pluto, NULL);
     pthread_cond_init(&no_lleno, NULL);
     pthread_cond_init(&no_vacio, NULL);
-
     
     pthread_create(&th1, NULL, (void *)jefe_pista, NULL);
     pthread_create(&th2, NULL, (void *)radar, NULL);
     pthread_create(&th3, NULL, (void *)torre_de_control, NULL);
     
+	
+	
     pthread_join(th1, NULL);
     pthread_join(th2, NULL);
     pthread_join(th3, NULL);
 
-    pthread_mutex_destroy(&mut_id);
+    pthread_mutex_destroy(&pluto);
     pthread_cond_destroy(&no_lleno);
     pthread_cond_destroy(&no_vacio);
 
-    print_banner();
+    for (int i=0; i<n; i++) {
+		free(planes_jefe[i]);
+		free(planes_radar[i]);
+	}
+	
+	free(planes_jefe);
+	free(planes_radar);
+	queue_destroy();
+	print_banner();
 
     return 0;
 }
 
 
-t
+
 void jefe_pista(int n){
 
-    plane * planes[n];
+	planes_jefe = malloc(sizeof(struct plane *)*n);
     
     for (int i=0; i<n; i++){
-        planes[i] = malloc(sizeof(plane));
-        planes[i]->id_number = disp_id++;
-        planes[i]->time_action = -1;
-        planes[i]->action = DESPEGUE;
-        planes[i]->last_flight = 0;
+        planes_jefe[i] = malloc(sizeof(plane));
+        planes_jefe[i]->id_number = disp_id++;
+        planes_jefe[i]->time_action = (float)rand()/RAND_MAX*5;
+        planes_jefe[i]->action = DESPEGUE;
+        planes_jefe[i]->last_flight = 0;
         
-        //pthread_mutex_lock(&mut_id);
-        //while (n_elementos == MAX_BUFFER)
-        //    pthread_cond_wait(&no_lleno, &mut_id);
-        //buffer[pos] = plane[i];
-        queue_put(planes[i]);
-        //pos = (pos + 1) % MAX_BUFFER;
-        //n_elementos ++;
-        //pthread_cond_signal(&no_vacio);
-        //pthread_mutex_unlock(&mut_id);
+        queue_put(planes_jefe[i]);
+
     }
+    
+    
     pthread_exit(0);
 }
 
@@ -104,19 +91,28 @@ void jefe_pista(int n){
 
 void radar(int m){
 
-    plane * planes[m];
+    planes_radar = malloc(sizeof(struct plane *)*m);;
     
     for (int i=0; i<m; i++){
-        planes[i] = malloc(sizeof(plane));
-        planes[i]->id_number = disp_id++;
-        planes[i]->time_action = -1;
-        planes[i]->action = ATERRIZAJE;
-        planes[i]->last_flight = 0;
+        planes_radar[i] = malloc(sizeof(plane));
+        planes_radar[i]->id_number = disp_id++;
+        planes_radar[i]->time_action = -1;
+        planes_radar[i]->action = ATERRIZAJE;
+        planes_radar[i]->last_flight = 0;
         
-        queue_put(planes[i]);
+        queue_put(planes_radar[i]);
     }
     pthread_exit(0);
 }
 
-void torre_de_control(){}
+void torre_de_control() {
+	plane * pollo;
+	int i=0;
+	
+	while (!queue_empty()) {
+		pollo = queue_get();
+		printf("Aereo %i -esimo esegue per %i\n",i++,pollo->time_action);
+		sleep(pollo->time_action);
+	}
+}
 
