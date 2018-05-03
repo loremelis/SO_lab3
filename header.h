@@ -13,6 +13,10 @@ pthread_t th1, th2, th3;
 /* id planes */
 int disp_id = 0;
 
+/* time planes */
+int t_off = 0;
+int t_land = 0;
+
 /* Pointers to arrays of Pointers to planes structures */
 struct plane ** planes_jefe;
 struct plane ** planes_radar;

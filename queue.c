@@ -26,11 +26,13 @@ int queue_init(int size){
     buffer = malloc(sizeof(struct plane * )*size);
 	buffer_size = size;
 	
-	printf("assig size %i\n", size);
+	//printf("assig size %i\n", size);
 	
 	pthread_mutex_init(&pluto, NULL);
     pthread_cond_init(&no_lleno, NULL);
     pthread_cond_init(&no_vacio, NULL);
+    
+    printf("[QUEUE] Buffer initialized\n");
 	
     return 0;
 }
@@ -51,6 +53,8 @@ int queue_put(struct plane * x) {
     pthread_cond_signal(&no_vacio); // setta a 1 perché il buffer non è vuoto
     //printf("Esco dall sc\n");
 	pthread_mutex_unlock(&pluto);
+    printf("[QUEUE] Storing plane with id %i \n", x->id_number);
+    
 	return 0;
 }
 
@@ -62,17 +66,17 @@ struct plane * queue_get(void) {
 	
 	pthread_mutex_lock(&pluto);
     while (!n_elementos){
-		printf("\bWait queue...");
+		//printf("\bWait queue...");
         pthread_cond_wait(&no_vacio, &pluto); 	// no_vacio vale  0 perché è vuoto il buffer.
 												// quando è posto a 1 dal prod. si sblocca
-		printf(" end\n");
+		//printf(" end\n");
 	}
     pippo = buffer[first_pos];
     first_pos = (first_pos + 1) % buffer_size;
     n_elementos --;
     pthread_cond_signal(&no_lleno); // setta a 1 perché il buffer non è più pieno
     pthread_mutex_unlock(&pluto);
-
+    printf("[QUEUE] Getting plane with id %i \n", pippo->id_number);
 	return pippo;
 }
 
@@ -89,6 +93,7 @@ int queue_full(void){
 /*To destroy the queue and free the resources*/
 int queue_destroy(void){
     
+    //printf("Distruggendo tutto\n");
 	free(buffer);
 	
 	pthread_mutex_destroy(&pluto);
