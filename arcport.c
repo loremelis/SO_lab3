@@ -130,14 +130,26 @@ void torre_de_control(void * n_planes_) {
 	
 	while (1)
 	{
-		// if (queue_empty()) sched_yield();
-        //printf("[CONTROL] Waiting for planes in empty queue",);
-		pollo = queue_get();
+		if (queue_empty())
+            printf("[CONTROL] Waiting for planes in empty queue\n");
+
+        pollo = queue_get();
+        
+        switch (pollo->action) {
+            case DESPEGUE:
+                printf("[CONTROL] Putting plane with id %i in track\n",pollo->id_number);
+                break;
+            case ATERRIZAJE:
+                printf("[CONTROL] Track is free for plane with id %i\n",pollo->id_number);
+                break;
+            default:
+                break;
+        }
+        
+        // Cambiare
         if (i < n_planes - 2){
-            printf("[CONTROL] Putting plane with id %i in track\n",pollo->id_number);
             i++;
         } else {
-            printf("[CONTROL] Putting plane with id %i in track\n",pollo->id_number);
             printf("[CONTROL] After plane with id %i the airport will be closed\n",pollo->id_number);
             break;
         }
