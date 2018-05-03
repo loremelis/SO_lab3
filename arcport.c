@@ -16,6 +16,7 @@ void print_banner()
 
 int main(int argc, char ** argv) {
     
+    // Control arguments
     switch (argc){
         case 1:
             n = 4;
@@ -32,47 +33,51 @@ int main(int argc, char ** argv) {
             
     }
     
-    
+    // Declaration of threads
     pthread_t th1, th2, th3;
     
+    // Mutex and Conditional Variables
 	pthread_mutex_init(&pluto, NULL);
     pthread_cond_init(&no_lleno, NULL);
     pthread_cond_init(&no_vacio, NULL);
     
+    // Create the Threads
     pthread_create(&th1, NULL, (void *)jefe_pista, NULL);
     pthread_create(&th2, NULL, (void *)radar, NULL);
     pthread_create(&th3, NULL, (void *)torre_de_control, NULL);
-    
-	
 	
     pthread_join(th1, NULL);
     pthread_join(th2, NULL);
     pthread_join(th3, NULL);
 
+    // Destroy the Threads
     pthread_mutex_destroy(&pluto);
     pthread_cond_destroy(&no_lleno);
     pthread_cond_destroy(&no_vacio);
 
+    // Free the memory
     for (int i=0; i<n; i++) {
 		free(planes_jefe[i]);
 		free(planes_radar[i]);
 	}
-	
 	free(planes_jefe);
 	free(planes_radar);
+    
 	queue_destroy();
 	print_banner();
 
     return 0;
 }
 
-
-
+// Jefe de Pista
+// Create n planes (Despuegue)
+// Insert in the buffer
 void jefe_pista(int n){
 
 	planes_jefe = malloc(sizeof(struct plane *)*n);
     
     for (int i=0; i<n; i++){
+        //Inizialization
         planes_jefe[i] = malloc(sizeof(plane));
         planes_jefe[i]->id_number = disp_id++;
         planes_jefe[i]->time_action = (float)rand()/RAND_MAX*5;
@@ -87,13 +92,15 @@ void jefe_pista(int n){
     pthread_exit(0);
 }
 
-
-
+// Radar
+// Create n planes (Aterrizaje)
+// Insert in the buffer
 void radar(int m){
 
     planes_radar = malloc(sizeof(struct plane *)*m);;
     
     for (int i=0; i<m; i++){
+        // Inizialization
         planes_radar[i] = malloc(sizeof(plane));
         planes_radar[i]->id_number = disp_id++;
         planes_radar[i]->time_action = -1;
@@ -105,7 +112,11 @@ void radar(int m){
     pthread_exit(0);
 }
 
+// Torre de Control
+// Consume all planes
+// Remove from the buffer
 void torre_de_control() {
+    
 	plane * pollo;
 	int i=0;
 	
