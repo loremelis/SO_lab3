@@ -20,7 +20,7 @@ pthread_cond_t no_vacio;
  * 2 = Print buffer
  * 3 = Last flight
  * 4 = Print arguments */
-int debug = 4;
+int debug = 2;
 
 /* Struct Plane */
 struct plane ** buffer;

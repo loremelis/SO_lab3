@@ -168,6 +168,8 @@ void radar(void * m_) {
         if (planes_radar[i]->id_number == n_planes - 1)
             planes_radar[i]->last_flight = 1;
         planes_radar[i]->last_flight = 0;
+        
+        
         if (debug == 3)
             printf("Last flight: %i", planes_radar[i]->last_flight);
         printf("[RADAR] Plane with id %i detected!\n", planes_radar[i]->id_number);
