@@ -1,9 +1,17 @@
 #include "header.h"
 
-extern void print_buffer();
+/* id planes */
+int disp_id = 0;
 
-/* DEBUG */
-extern int debug;
+/* number pf planes */
+int n_planes = 0;
+int n, m;
+
+/* time planes */
+int t_off = 0;
+int t_land = 0;
+
+
 
 void print_banner()
 {
@@ -17,7 +25,7 @@ int main(int argc, char ** argv) {
 
     int buffer_size;
     
-    /* Controll Arguments */
+    /* Control of the arguments */
     switch (argc){
         case 1:
             n = 4;
@@ -88,8 +96,10 @@ int main(int argc, char ** argv) {
 void jefe_pista(void * n_){
 	
 	int n = *(int*)n_;
-    int t; //DEBUG
+    int t; /* DEBUG */
 
+   // sleep(10);
+    
     /* Allocation Memory */
 	planes_jefe = malloc(sizeof(struct plane *)*n);
     
@@ -108,6 +118,7 @@ void jefe_pista(void * n_){
         planes_jefe[i]->action = DESPEGUE;
         if (planes_jefe[i]->id_number == n_planes - 1){
             planes_jefe[i]->last_flight = 1;
+			// printf("%i\n",planes_jefe[i]->last_flight);
         } else {
             planes_jefe[i]->last_flight = 0;
         }
@@ -141,6 +152,8 @@ void radar(void * m_) {
 
 	int m = *(int*)m_;
 	
+	// sleep(10);
+	
     /* Allocation Memory */
     planes_radar = malloc(sizeof(struct plane *)*m);;
     
@@ -156,7 +169,7 @@ void radar(void * m_) {
             planes_radar[i]->last_flight = 1;
         planes_radar[i]->last_flight = 0;
         if (debug == 3)
-            printf("Last flight: %i",planes_radar[i]->last_flight);
+            printf("Last flight: %i", planes_radar[i]->last_flight);
         printf("[RADAR] Plane with id %i detected!\n", planes_radar[i]->id_number);
         
         queue_put(planes_radar[i]);
@@ -178,14 +191,17 @@ void radar(void * m_) {
 void torre_de_control() {
 
 	struct plane * pollo;
+	int resume_fd;
 	
 	while (1){
-        
-		if (queue_empty())
+		
+		if (queue_empty()) {
             printf("[CONTROL] Waiting for planes in empty queue\n");
-        
-        /* Take the planes from the Buffer */
-        pollo = queue_get();
+		}
+            
+		/* Take the planes from the Buffer */
+		pollo = queue_get();
+		printf("Last flight: %i\n",pollo->last_flight);
         
         switch (pollo->action) {
             case DESPEGUE:
@@ -204,21 +220,28 @@ void torre_de_control() {
             sleep(pollo->time_action);
             printf("[CONTROL] Plane %i took off after %i seconds\n",pollo->id_number, pollo->time_action);
             break;
-        }
+        } else printf("last_flight bit: %i \n", pollo->last_flight);
         sleep(pollo->time_action);
         printf("[CONTROL] Plane %i took off after %i seconds\n",pollo->id_number, pollo->time_action);
 
 		if (debug == 0)
-            printf("Aereo %i  esegue per %i action: %s\n",pollo->id_number, pollo->time_action,ATERRIZAJE?"ATT":(DESPEGUE?"DECOLLO":"SCON"));
-	}
+            printf("Aereo %i  esegue per %i action: %s\n",
+				   pollo->id_number, pollo->time_action,ATERRIZAJE?"ATERRIZAJE":(DESPEGUE?"DESPEGUE":"UNKNOWN"));
+		
+	} /* END while */
+	
+	resume_fd = open("resume.air", O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU|S_IRWXG|S_IROTH);
+	dup2(resume_fd,1);
+	
     printf("Airport Closed!\n");
     printf("\t Total number of planes processed: %i\n\t Numbers of planes landed:%i \n\t Numbers of planes taken off:%i\n",n_planes,n,m);
     printf("\n*****************************************\n");
     printf("---> Thanks for your trust in us <---\n");
     printf("*****************************************\n\n");
     
-    int fd = open("resume.air", O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU|S_IRWXG|S_IROTH);
-    
+	close(resume_fd);
+	printf("end");
+	
     pthread_exit(0);
     
 }

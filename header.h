@@ -3,23 +3,16 @@
 #include "queue.h"
 #include <pthread.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 
 #define NUM_TRACKS 1
 #define ATERRIZAJE 0
 #define DESPEGUE 1
 
 pthread_t th1, th2, th3;
-
-/* id planes */
-int disp_id = 0;
-
-/* number pf planes */
-int n_planes = 0;
-int n,m;
-
-/* time planes */
-int t_off = 0;
-int t_land = 0;
 
 /* Pointers to arrays of Pointers to planes structures */
 struct plane ** planes_jefe;
@@ -30,4 +23,11 @@ void jefe_pista();
 void radar();
 void torre_de_control();
 
+/* Welcome msg */
 void print_banner();
+
+/* Definition in queue.c */
+extern void print_buffer();
+
+/* DEBUG LEVEL, definition in queue.c */
+extern int debug;
