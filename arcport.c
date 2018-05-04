@@ -2,6 +2,9 @@
 
 extern void print_buffer();
 
+/* DEBUG */
+extern int debug;
+
 void print_banner()
 {
     printf("\n*****************************************\n");
@@ -11,128 +14,177 @@ void print_banner()
 
 
 int main(int argc, char ** argv) {
-	
-    int n,m, n_planes;
 
+    int buffer_size;
+    
+    /* Controll Arguments */
     switch (argc){
         case 1:
             n = 4;
             m = 3;
+            t_off = 2;
+            t_land = 3;
+            buffer_size = 6;
             break;
         case 6:
             n = atoi(argv[1]);
             m = atoi(argv[3]);
+            t_off = atoi(argv[2]);
+            t_land = atoi(argv[4]);
+            buffer_size = atoi(argv[5]);
             break;
         default:
             perror("Wrong number of argument");
             exit(1);
-            //Errrore
     }
     
     n_planes = n + m;
-    t_off = atoi(argv[3]);
-    t_land = atoi(argv[5]);
+    
+    // Debug argomento
+    if(debug == 4){
+        printf("n:%i\n",n);
+        printf("m:%i\n",m);
+        printf("t_off:%i\n",t_off);
+        printf("t_land:%i\n",t_land);
+        printf("buffer size:%i\n",buffer_size);
+    }
     
     print_banner();
     
-	queue_init(5);
+    /* Inizialization Queue */
+	queue_init(buffer_size);
     
+    /* Creation Thread */
     pthread_create(&th1, NULL, (void *)jefe_pista, &n);
     pthread_create(&th2, NULL, (void *)radar, &m);
-    pthread_create(&th3, NULL, (void *)torre_de_control, &n_planes);
+    pthread_create(&th3, NULL, (void *)torre_de_control, NULL);
     
-	//printf("main -- tread cretated!\n");
+    if (debug == 0)
+        printf("main -- tread cretated!\n");
 	
     pthread_join(th1, NULL);
     pthread_join(th2, NULL);
     pthread_join(th3, NULL);
 
-
+    /* Free Memory */
     for (int i=0; i<n; i++) {
 		free(planes_jefe[i]);
 	}
     for (int i=0; i<m; i++) {
         free(planes_radar[i]);
     }
-
-	
-	free(planes_jefe);
+    free(planes_jefe);
 	free(planes_radar);
 	
-    
+    /* Destroy the Queue */
 	queue_destroy();
-	
-    return 0;
+	return 0;
 }
 
-
-
+/* Jefe De Pista
+ * Create n planes (Despuegue)
+ * Insert in the Buffer
+ * */
 void jefe_pista(void * n_){
 	
 	int n = *(int*)n_;
-	// int t; //DEBUG
+    int t; //DEBUG
 
+    /* Allocation Memory */
 	planes_jefe = malloc(sizeof(struct plane *)*n);
     
-	//printf("jefe , n vale %i\n",n);
+	if (debug == 0)
+        printf("jefe , n vale %i\n",n);
 	
     for (int i=0; i<n; i++) {
-		//printf("Assegnato tempo %i",t = ((float)rand())/RAND_MAX*5);
+        
+		if (debug == 0)
+            printf("Assegnato tempo %i",t = ((float)rand())/RAND_MAX*5);
+        
+        /* Inizialization planes */
         planes_jefe[i] = malloc(sizeof(struct plane));
         planes_jefe[i]->id_number = disp_id++;
         planes_jefe[i]->time_action = t_off;
         planes_jefe[i]->action = DESPEGUE;
-        planes_jefe[i]->last_flight = 0;
+        if (planes_jefe[i]->id_number == n_planes - 1){
+            planes_jefe[i]->last_flight = 1;
+        } else {
+            planes_jefe[i]->last_flight = 0;
+        }
+
+        if (debug == 3){
+            printf("N Planes: %i\n",n_planes);
+            printf("Last flight: %i\n",planes_jefe[i]->last_flight);
+        }
+        
         printf("[TRACKBOSS] Plane with id %i checked\n", planes_jefe[i]->id_number);
         
+        /* Put the planes in the buffer */
         queue_put(planes_jefe[i]);
         
         printf("[TRACKBOSS] Plane with id %i ready to take off\n", planes_jefe[i]->id_number);
-		//printf("jefe  -- Messo aereo in coda.\n");
-		//print_buffer();
+        
+		if (debug == 0)
+            printf("jefe  -- Messo aereo in coda.\n");
+		if (debug == 2)
+            print_buffer();
 
     }
-    
-    
     pthread_exit(0);
 }
 
-
-
+/* Radar
+ * Create m planes (Aterrizaje)
+ * Insert in the Buffer
+ * */
 void radar(void * m_) {
 
 	int m = *(int*)m_;
 	
+    /* Allocation Memory */
     planes_radar = malloc(sizeof(struct plane *)*m);;
     
+    
     for (int i=0; i<m; i++){
+        
+        /* Inizialization planes */
         planes_radar[i] = malloc(sizeof(struct plane));
         planes_radar[i]->id_number = disp_id++;
         planes_radar[i]->time_action = t_land;
         planes_radar[i]->action = ATERRIZAJE;
+        if (planes_radar[i]->id_number == n_planes - 1)
+            planes_radar[i]->last_flight = 1;
         planes_radar[i]->last_flight = 0;
+        if (debug == 3)
+            printf("Last flight: %i",planes_radar[i]->last_flight);
         printf("[RADAR] Plane with id %i detected!\n", planes_radar[i]->id_number);
         
         queue_put(planes_radar[i]);
         
         printf("[RADAR] Plane with id %i ready to land\n", planes_radar[i]->id_number);
-		//printf("radar  -- Messo aereo in coda.\n");
-		//print_buffer();
+        
+		if (debug == 0)
+            printf("radar  -- Messo aereo in coda.\n");
+		if (debug == 2)
+            print_buffer();
     }
     pthread_exit(0);
 }
 
-void torre_de_control(void * n_planes_) {
-    
-    int n_planes = *(int*)n_planes_;
-    int i = 0;
+/* Torre de Control
+ * Consume m + n planes
+ * Take off the planes from the buffer
+ * */
+void torre_de_control() {
+
 	struct plane * pollo;
 	
-	while (1)
-	{
+	while (1){
+        
 		if (queue_empty())
             printf("[CONTROL] Waiting for planes in empty queue\n");
-
+        
+        /* Take the planes from the Buffer */
         pollo = queue_get();
         
         switch (pollo->action) {
@@ -147,17 +199,26 @@ void torre_de_control(void * n_planes_) {
         }
         
         // Cambiare
-        if (i < n_planes - 2){
-            i++;
-        } else {
+        if (pollo->last_flight == 1){
             printf("[CONTROL] After plane with id %i the airport will be closed\n",pollo->id_number);
+            sleep(pollo->time_action);
+            printf("[CONTROL] Plane %i took off after %i seconds\n",pollo->id_number, pollo->time_action);
             break;
         }
-		//printf("Aereo %i  esegue per %i action: %s\n",pollo->id_number, pollo->time_action,ATERRIZAJE?"ATT":(DESPEGUE?"DECOLLO":"SCON"));
-		sleep(pollo->time_action);
+        sleep(pollo->time_action);
+        printf("[CONTROL] Plane %i took off after %i seconds\n",pollo->id_number, pollo->time_action);
+
+		if (debug == 0)
+            printf("Aereo %i  esegue per %i action: %s\n",pollo->id_number, pollo->time_action,ATERRIZAJE?"ATT":(DESPEGUE?"DECOLLO":"SCON"));
 	}
-    
     printf("Airport Closed!\n");
+    printf("\t Total number of planes processed: %i\n\t Numbers of planes landed:%i \n\t Numbers of planes taken off:%i\n",n_planes,n,m);
+    printf("\n*****************************************\n");
+    printf("---> Thanks for your trust in us <---\n");
+    printf("*****************************************\n\n");
+    
+    int fd = open("resume.air", O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU|S_IRWXG|S_IROTH);
+    
     pthread_exit(0);
     
 }

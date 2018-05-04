@@ -13,6 +13,10 @@ pthread_t th1, th2, th3;
 /* id planes */
 int disp_id = 0;
 
+/* number pf planes */
+int n_planes = 0;
+int n,m;
+
 /* time planes */
 int t_off = 0;
 int t_land = 0;
