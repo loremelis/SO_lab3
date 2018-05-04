@@ -6,6 +6,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <semaphore.h>
+#include <ctype.h>
 
 
 #define NUM_TRACKS 1
@@ -13,6 +15,10 @@
 #define DESPEGUE 1
 
 pthread_t th1, th2, th3;
+
+/* This semaphore protects the global var. id_disp (next available id).
+ * To be initialized to 1 */
+sem_t lock;
 
 /* Pointers to arrays of Pointers to planes structures */
 struct plane ** planes_jefe;
