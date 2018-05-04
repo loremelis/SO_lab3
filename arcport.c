@@ -70,16 +70,6 @@ int main(int argc, char ** argv) {
     }
     
     n_planes = n + m;
-    
-    // Debug argomento
-    if(debug == 4){
-        printf("n:%i\n",n);
-        printf("m:%i\n",m);
-        printf("t_off:%i\n",t_off);
-        printf("t_land:%i\n",t_land);
-        printf("buffer size:%i\n",buffer_size);
-    }
-    
     print_banner();
     
     /* Inizialization Queue and semaphores */
@@ -90,9 +80,6 @@ int main(int argc, char ** argv) {
     pthread_create(&th1, NULL, (void *)jefe_pista, &n);
     pthread_create(&th2, NULL, (void *)radar, &m);
     pthread_create(&th3, NULL, (void *)torre_de_control, NULL);
-    
-    if (debug == 0)
-        printf("main -- tread cretated!\n");
 	
     pthread_join(th1, NULL);
     pthread_join(th2, NULL);
@@ -122,51 +109,29 @@ int main(int argc, char ** argv) {
 void jefe_pista(void * n_){
 	
 	int n = *(int*)n_;
-    int t; /* DEBUG */
 
     /* Allocation Memory */
 	planes_jefe = malloc(sizeof(struct plane *)*n);
-    
-	if (debug == 0)
-        printf("jefe , n vale %i\n",n);
 	
     for (int i=0; i<n; i++) {
-        
-		if (debug == 0)
-            printf("Assegnato tempo %i",t = ((float)rand())/RAND_MAX*5);
-        
+
 		sem_wait(&lock);
 		
         /* Inizialization planes */
         planes_jefe[i] = malloc(sizeof(struct plane));
-
         planes_jefe[i]->id_number = disp_id++;
-		
-        planes_jefe[i]->time_action = t_off;
+		planes_jefe[i]->time_action = t_off;
         planes_jefe[i]->action = DESPEGUE;
         if (planes_jefe[i]->id_number == n_planes - 1) {
             planes_jefe[i]->last_flight = 1;
-			// printf("%i\n",planes_jefe[i]->last_flight);
         } else planes_jefe[i]->last_flight = 0;
 		sem_post(&lock);
-		
-        if (debug == 3){
-            printf("N Planes: %i\n",n_planes);
-            printf("Last flight: %i\n",planes_jefe[i]->last_flight);
-        }
-        
         printf("[TRACKBOSS] Plane with id %i checked\n", planes_jefe[i]->id_number);
         
         /* Put the planes in the buffer */
         queue_put(planes_jefe[i]);
 		
         printf("[TRACKBOSS] Plane with id %i ready to take off\n", planes_jefe[i]->id_number);
-        
-		if (debug == 0)
-            printf("jefe  -- Messo aereo in coda.\n");
-		if (debug == 2)
-            print_buffer();
-
     }
     pthread_exit(0);
 }
@@ -195,19 +160,12 @@ void radar(void * m_) {
             planes_radar[i]->last_flight = 1;
 		else planes_radar[i]->last_flight = 0;
         sem_post(&lock);
-        
-        if (debug == 3)
-            printf("Last flight: %i", planes_radar[i]->last_flight);
+
         printf("[RADAR] Plane with id %i detected!\n", planes_radar[i]->id_number);
         
         queue_put(planes_radar[i]);
         
         printf("[RADAR] Plane with id %i ready to land\n", planes_radar[i]->id_number);
-        
-		if (debug == 0)
-            printf("radar  -- Messo aereo in coda.\n");
-		if (debug == 2)
-            print_buffer();
     }
     pthread_exit(0);
 }
@@ -231,7 +189,6 @@ void torre_de_control() {
 		/* Take the planes from the Buffer */
 		pollo = queue_get();
 		n_planes_processed++;
-		printf("Last flight: %i\n",pollo->last_flight);
         
         switch (pollo->action) {
             case DESPEGUE:
@@ -244,7 +201,6 @@ void torre_de_control() {
                 break;
         }
         
-        // Cambiare
         if (pollo->last_flight == 1){
             printf("[CONTROL] After plane with id %i the airport will be closed\n",pollo->id_number);
             sleep(pollo->time_action);
@@ -253,10 +209,6 @@ void torre_de_control() {
         } else printf("last_flight bit: %i \n", pollo->last_flight);
         sleep(pollo->time_action);
         printf("[CONTROL] Plane %i took off after %i seconds\n",pollo->id_number, pollo->time_action);
-
-		if (debug == 0)
-            printf("Aereo %i  esegue per %i action: %s\n",
-				   pollo->id_number, pollo->time_action,ATERRIZAJE?"ATERRIZAJE":(DESPEGUE?"DESPEGUE":"UNKNOWN"));
 		
 	} /* END while */
 	
