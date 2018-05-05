@@ -70,37 +70,41 @@ int main(int argc, char ** argv) {
     }
     
     n_planes = n + m;
-    print_banner();
-    
-    /* Inizialization Queue and semaphores */
-	queue_init(buffer_size);
-	sem_init(&lock,0,1);
-    
-    /* Creation Thread */
-    pthread_create(&th1, NULL, (void *)jefe_pista, &n);
-    pthread_create(&th2, NULL, (void *)radar, &m);
-    pthread_create(&th3, NULL, (void *)torre_de_control, NULL);
 	
-    pthread_join(th1, NULL);
-    pthread_join(th2, NULL);
-    pthread_join(th3, NULL);
+	if (n_planes)  {
+		print_banner();
+		
+		/* Inizialization Queue and semaphores */
+		queue_init(buffer_size);
+		sem_init(&lock,0,1);
+		
+		/* Creation Thread */
+		pthread_create(&th1, NULL, (void *)jefe_pista, &n);
+		pthread_create(&th2, NULL, (void *)radar, &m);
+		pthread_create(&th3, NULL, (void *)torre_de_control, NULL);
+		
+		pthread_join(th1, NULL);
+		pthread_join(th2, NULL);
+		pthread_join(th3, NULL);
 
-    /* Free Memory */
-    for (int i=0; i<n; i++) {
-		free(planes_jefe[i]);
-	}
-    for (int i=0; i<m; i++) {
-        free(planes_radar[i]);
-    }
-    free(planes_jefe);
-	free(planes_radar);
-	
-    /* Destroy the Queue and sem. */
-	queue_destroy();
-	sem_destroy(&lock);
+		/* Free Memory */
+		for (int i=0; i<n; i++) {
+			free(planes_jefe[i]);
+		}
+		for (int i=0; i<m; i++) {
+			free(planes_radar[i]);
+		}
+		free(planes_jefe);
+		free(planes_radar);
+		
+		/* Destroy the Queue and sem. */
+		queue_destroy();
+		sem_destroy(&lock);
+	} else printf("-----\nNo planes -- airport will remain closed\n-----\n");
 	
 	return 0;
 }
+
 
 /* Jefe De Pista
  * Create n planes (Despuegue)
@@ -176,7 +180,7 @@ void radar(void * m_) {
  * */
 void torre_de_control() {
 
-	struct plane * pollo;
+	struct plane * avion;
 	int resume_fd;
 	static int n_planes_processed = 0;
 
@@ -187,28 +191,28 @@ void torre_de_control() {
 		}
             
 		/* Take the planes from the Buffer */
-		pollo = queue_get();
+		avion = queue_get();
 		n_planes_processed++;
         
-        switch (pollo->action) {
+        switch (avion->action) {
             case DESPEGUE:
-                printf("[CONTROL] Putting plane with id %i in track\n",pollo->id_number);
+                printf("[CONTROL] Putting plane with id %i in track\n",avion->id_number);
                 break;
             case ATERRIZAJE:
-                printf("[CONTROL] Track is free for plane with id %i\n",pollo->id_number);
+                printf("[CONTROL] Track is free for plane with id %i\n",avion->id_number);
                 break;
             default:
                 break;
         }
         
-        if (pollo->last_flight == 1){
-            printf("[CONTROL] After plane with id %i the airport will be closed\n",pollo->id_number);
-            sleep(pollo->time_action);
-            printf("[CONTROL] Plane %i took off after %i seconds\n",pollo->id_number, pollo->time_action);
+        if (avion->last_flight == 1){
+            printf("[CONTROL] After plane with id %i the airport will be closed\n",avion->id_number);
+            sleep(avion->time_action);
+            printf("[CONTROL] Plane %i took off after %i seconds\n",avion->id_number, avion->time_action);
             break;
-        } else printf("last_flight bit: %i \n", pollo->last_flight);
-        sleep(pollo->time_action);
-        printf("[CONTROL] Plane %i took off after %i seconds\n",pollo->id_number, pollo->time_action);
+        } /* else printf("last_flight bit: %i \n", avion->last_flight); */
+        sleep(avion->time_action);
+        printf("[CONTROL] Plane %i took off after %i seconds\n",avion->id_number, avion->time_action);
 		
 	} /* END while */
 	
